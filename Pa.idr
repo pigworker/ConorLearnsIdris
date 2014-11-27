@@ -90,7 +90,7 @@ tsbus : {X : Type} -> {x, y : X} -> x = y -> (P : X -> Type) -> P y -> P x
 tsbus Refl P p = p
 
 total moreOn : {G : Vect n Type} ->
-        (gs : (i : Fin n) -> Grammar G (index i G)) ->
+        (GRAMMAR G) ->
         (i : Fin n) -> Grammar G (index i G) ->
         index i G -> Grammar G (index i G)
 moreOn gs i (ret y) x = naw
@@ -103,7 +103,7 @@ moreOn gs i naw x = naw
 moreOn gs i (g <+> h) x = moreOn gs i g x <+> moreOn gs i h x
 
 total mayMoreOn : {G : Vect n Type} ->
-        ((i : Fin n) -> Grammar G (index i G)) ->
+        (GRAMMAR G) ->
         (i : Fin n) -> Grammar G (index i G) ->
         index i G -> Grammar G (index i G)
 mayMoreOn gs i g x = moreOn gs i g x <+> ret x
@@ -122,7 +122,7 @@ using (n : Nat, G : Vect n Type, X : Type, Y : Type, Z : Type)
   hingmy gs (hing ks) = hing ks
 
 total parsing : {G : Vect n Type} -> {X, Y : Type} ->
-        (gs : (i : Fin n) -> Grammar G (index i G)) ->
+        (GRAMMAR G) ->
         (rs : List (Fin n)) ->
         (ls : List (Fin n)) ->
         Grammar G X -> PStack G X Y ->
