@@ -70,13 +70,14 @@ using (n : Nat, G : Vect n Type, X : Type, Y : Type, Z : Type)
   data PStack : Vect n Type -> Type -> Type -> Type where
     done : PStack G X X
     bind : (X -> Grammar G Y) -> PStack G Y Z -> PStack G X Z
-    more : Bool -> (i : Fin n) -> (X = index i G) -> PStack G X Y -> PStack G X Y
+    more : (i : Fin n) -> PStack G (index i G) Y -> PStack G (index i G) Y
+    hing : PStack G X Y -> PStack G X Y
 
-  hingmy : PStack G X Y -> PStack G X Y
-  hingmy (more True i p (more False j q ks)) = more True i p (more False j q (hingmy ks))
-  hingmy (more b i q ks) = more True i q (more False i q (hingmy ks))
-  hingmy (bind k ks) = bind k (hingmy ks)
-  hingmy done = done
+  total hingmy : (gs : (i : Fin n) -> Grammar G (index i G)) -> PStack G X Y -> PStack G X Y
+  hingmy gs (more i ks) = hing (bind (mayMoreOn i (gs i)) (more i (hingmy gs ks)))
+  hingmy gs (bind k ks) = bind k (hingmy gs ks)
+  hingmy gs done = done
+  hingmy gs (hing ks) = hing ks
 
 total parsing : {G : Vect n Type} -> {X, Y : Type} ->
         (gs : (i : Fin n) -> Grammar G (index i G)) ->
@@ -85,16 +86,16 @@ total parsing : {G : Vect n Type} -> {X, Y : Type} ->
         Grammar G X -> PStack G X Y ->
         List Char -> List Y
 parsing gs rs ls (ret x) done [] = [x]
+parsing gs rs ls (ret x) (hing ks) s = parsing gs rs ls (ret x) ks s
 parsing gs rs ls (ret x) (bind k ks) s = parsing gs rs ls (k x) ks s
-parsing gs rs ls (ret x) (more b i Refl ks) s =
-  parsing gs rs ls (if b then mayMoreOn i (gs i) x else ret x) ks s
+parsing gs rs ls (ret x) (more i ks) s = parsing gs rs ls (ret x) ks s
 parsing gs rs (l :: ls) (rec i k) ks s =
   if i == l
-    then parsing gs rs ls (gs i) (more False i Refl (bind k ks)) s
+    then parsing gs rs ls (gs i) (more i (bind k ks)) s
     else parsing gs rs ls (rec i k) ks s
 parsing gs rs ls (eat p k) ks (c :: s) =
   if p c
-  then parsing gs rs rs (k c) (hingmy ks) s
+  then parsing gs rs rs (k c) (hing (hingmy gs ks)) s
   else []
 parsing gs rs ls (g <+> h) ks s =
   parsing gs rs ls g ks s ++ parsing gs rs ls h ks s
